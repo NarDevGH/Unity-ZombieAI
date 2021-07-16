@@ -43,16 +43,23 @@ public class ZombieAnimController : MonoBehaviour
 
     public bool Crawling
     {
-        get { return _zAnimator.GetBool("Crawling"); }
+        get { return _zAnimator.GetBool("Crawl"); }
         set
         {
-            _zAnimator.SetBool("Crawling", value);
+            _zAnimator.SetBool("Crawl", value);
         }
     }
 
-    public void StartAgro() {
-        Agro = true;
+
+    public bool Attack
+    {
+        get { return _zAnimator.GetBool("Attack"); }
+        set 
+        { 
+            _zAnimator.SetBool("Attack", value); 
+        }
     }
+
 
     public void StopAgro() 
     {
