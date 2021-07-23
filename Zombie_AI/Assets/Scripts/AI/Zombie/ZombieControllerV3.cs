@@ -6,7 +6,7 @@ using AI.Helper;
 using AI.Zombie.Helper;
 using System;
 
-public class ZombieControllerExp : MonoBehaviour
+public class ZombieControllerV3 : MonoBehaviour
 {
     #region variables
     [SerializeField]    [Min(1)] private float DetectPlayersAroundR = 1f;

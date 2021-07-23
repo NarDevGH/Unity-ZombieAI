@@ -9,24 +9,20 @@ using System;
 public class ZombieController : MonoBehaviour
 {
     #region variables
-    [SerializeField]    [Min(1)]private float FovDistance = 1f;
-    [SerializeField]    [Range(0,360)] private float FovRange;
-    [SerializeField]    [Range(1, 10)] private float stopDistance = 1f;
-    [SerializeField]    private LayerMask _obstructViewLayers;
+    [SerializeField] [Min(1)] private float FovRange = 1f;
+    [SerializeField] [Range(0, 360)] private float FovViewAngle;
+    [SerializeField] [Range(0.5f, 2)] private float FovOffset = 0.5f;
+    [SerializeField] [Range(1, 10)] private float stopDistance = 1f;
+    [SerializeField] private LayerMask _obstructViewLayers;
 
     private float refreshTime = 0.2f;
 
     private bool _chasingPlayer;
-    public bool ChasingPlayer 
-    {
-        get { return _chasingPlayer; }
-    }
 
     private ZombieAnimController _zAnimController;
-    public ZombieAnimController ZombieAnimController
-    {
-        get { return _zAnimController; }
-    }
+
+    public ZombieAnimController ZombieAnimController { get { return _zAnimController; } }
+
     public bool Agro
     {
         get { return _zAnimController.Agro; }
@@ -34,25 +30,35 @@ public class ZombieController : MonoBehaviour
 
     private TargetPriorityLevel _currentTargetPriority;
     private Vector3 _currentTargetPosition;
+
     private NavMeshPath _currentPath;
 
     private Coroutine _agroZombieIE;
     private Coroutine _goTowardsTargetPositionIE;
     private Coroutine _chasePlayerIE;
-    private Coroutine _lostTrakOfPlayer;
+    private Coroutine _lostTrackOfPlayerIE;
 
-    private List<GameObject> _playersInRange = new List<GameObject>();
+    private List<GameObject> _playersInRange;
+
     #endregion
 
     private void Awake()
     {
-        #region init
+
+        _currentPath = new NavMeshPath();
+        _zAnimController = new ZombieAnimController(GetComponent<Animator>());
+        _playersInRange = new List<GameObject>();
+
+        #region Init
+
         _chasingPlayer = false;
         _currentTargetPosition = Vector3.zero;
         _currentTargetPriority = TargetPriorityLevel.none;
 
-        _currentPath = new NavMeshPath();
-        _zAnimController = new ZombieAnimController(GetComponent<Animator>());
+        _agroZombieIE = null;
+        _goTowardsTargetPositionIE = null;
+        _chasePlayerIE = null;
+        _lostTrackOfPlayerIE = null;
         #endregion
     }
 
@@ -61,13 +67,13 @@ public class ZombieController : MonoBehaviour
         StartCoroutine(ZombieLogic());
     }
 
-    private IEnumerator ZombieLogic() 
+    private IEnumerator ZombieLogic()
     {
-        while (true) 
+        while (true)
         {
+            yield return new WaitForSeconds(refreshTime);
 
             GetPlayersInsideFOV(_playersInRange);
-            print(_chasingPlayer);
 
             if (_playersInRange.Count >= 1)
             {
@@ -75,26 +81,32 @@ public class ZombieController : MonoBehaviour
 
                 if (_chasingPlayer == false)
                 {
+
                     _chasingPlayer = true;
                     _currentTargetPriority = TargetPriorityLevel.player;
 
                     if (_goTowardsTargetPositionIE != null)
                     {
                         StopCoroutine(_goTowardsTargetPositionIE);
+                        _goTowardsTargetPositionIE = null;
 
                         _chasePlayerIE = StartCoroutine(ChasePlayer());
                     }
-                    else 
+                    else
                     {
-                        _agroZombieIE = StartCoroutine(AgroZombie());
+                        if (_agroZombieIE == null)
+                        {
+                            _agroZombieIE = StartCoroutine(AgroZombie());
+                        }
                     }
-
                 }
-                else 
+                else
                 {
-                    if (_lostTrakOfPlayer != null) 
+                    if (_lostTrackOfPlayerIE != null)
                     {
-                        StopCoroutine(_lostTrakOfPlayer);
+
+                        StopCoroutine(_lostTrackOfPlayerIE);
+                        _lostTrackOfPlayerIE = null;
 
                         _chasePlayerIE = StartCoroutine(ChasePlayer());
                     }
@@ -102,43 +114,36 @@ public class ZombieController : MonoBehaviour
             }
             else
             {
-                if (_chasingPlayer) // if lost tack of player
+                if (_chasingPlayer && _lostTrackOfPlayerIE == null)
                 {
-                    _chasingPlayer = false;
-                    _lostTrakOfPlayer = StartCoroutine( LostTrackOfPlayerIE() );
+                    _lostTrackOfPlayerIE = StartCoroutine(LostTrackOfPlayer());
                 }
             }
 
-            yield return new WaitForSeconds(refreshTime);
         }
-        
+
+
     }
 
-    private IEnumerator LostTrackOfPlayerIE()
+
+    public void AgroZombieBySound(Vector3 soundPosition, TargetPriorityLevel priorityLevel)
     {
-        StopCoroutine(_chasePlayerIE);
-
-        _goTowardsTargetPositionIE = StartCoroutine(GoTowardsTargetPosition()); // go toward last seen player position
-        yield return _goTowardsTargetPositionIE;
-
-        _zAnimController.Agro = false;
-        _currentTargetPosition = Vector3.zero;
-        _currentTargetPriority = TargetPriorityLevel.none;
-    }
-
-    public void AgroZombieBySound(Vector3 soundPosition,TargetPriorityLevel priorityLevel)
-    {
-        if (_chasingPlayer || !ValidateNewTarget(soundPosition, priorityLevel)) 
+        if (_chasingPlayer || !ValidateNewTarget(soundPosition, priorityLevel))
         {
-           return;
+            return;
         }
+
 
         _currentTargetPosition = soundPosition;
 
-        _agroZombieIE = StartCoroutine( AgroZombie() );
+        _agroZombieIE = StartCoroutine(AgroZombie());
+
+
     }
 
-    private IEnumerator AgroZombie() 
+
+
+    private IEnumerator AgroZombie()
     {
         transform.LookAt(_currentTargetPosition);
 
@@ -149,9 +154,37 @@ public class ZombieController : MonoBehaviour
         {
             _chasePlayerIE = StartCoroutine(ChasePlayer());
         }
-        else 
+        else
         {
-            _goTowardsTargetPositionIE = StartCoroutine( GoTowardsTargetPosition() );
+            _goTowardsTargetPositionIE = StartCoroutine(GoTowardsTargetPosition());
+        }
+
+        _agroZombieIE = null;
+    }
+
+    private IEnumerator ChasePlayer()
+    {
+        while (true)
+        {
+            NavMesh.CalculatePath(transform.position, _currentTargetPosition, -1, _currentPath);
+
+            if (_currentPath.corners.Length > 0)
+            {
+                AI_Helper.DebugPath(_currentPath, Color.red);
+
+                if (_currentPath.corners.Length <= 2 && Vector3.Distance(transform.position, _currentTargetPosition) <= stopDistance)
+                {
+                    _zAnimController.Attack = true;
+                }
+                else
+                {
+                    _zAnimController.Attack = false;
+                }
+
+                transform.LookAt(_currentPath.corners[1]);
+            }
+
+            yield return new WaitForSeconds(refreshTime);
         }
     }
 
@@ -160,71 +193,76 @@ public class ZombieController : MonoBehaviour
         while (true)
         {
             NavMesh.CalculatePath(transform.position, _currentTargetPosition, -1, _currentPath);
-            AI_Helper.DebugPath(_currentPath);
 
-            if (_currentPath.corners.Length  <= 2) // the last 2 corners (the transform pos. and the target pos.)
+            if (_currentPath.corners.Length > 0)
             {
-                if (Vector3.Distance(transform.position, _currentPath.corners[1]) <= stopDistance)
-                {
-                    _zAnimController.StopAgro();
-                    _currentTargetPosition = Vector3.zero; // Clear current target;
-                    _currentTargetPriority = TargetPriorityLevel.none; 
-                    yield break;
-                }
-            }
+                AI_Helper.DebugPath(_currentPath, Color.yellow);
 
-            transform.LookAt(_currentPath.corners[1]);
+                if (_currentPath.corners.Length <= 2)
+                {
+                    if (Vector3.Distance(transform.position, _currentTargetPosition) <= stopDistance)
+                    {
+
+                        ResetTarget();
+
+                        _goTowardsTargetPositionIE = null;
+                        yield break;
+                    }
+
+                }
+
+                transform.LookAt(_currentPath.corners[1]);
+            }
 
             yield return new WaitForSeconds(refreshTime);
         }
     }
 
-    private IEnumerator ChasePlayer()
+
+    private IEnumerator LostTrackOfPlayer()
     {
-        while (true)
-        {
-            NavMesh.CalculatePath(transform.position, _currentTargetPosition, -1, _currentPath);
-            AI_Helper.DebugPath(_currentPath, Color.red);
-            if (_currentPath.corners.Length <= 0)
-                continue;
-            if (_currentPath.corners.Length <= 2) // the last 2 corners (the transform pos. and the target pos.)
-            {
-                    if (Vector3.Distance(transform.position, _currentPath.corners[1]) <= stopDistance)
-                    {
-                        _zAnimController.Attack = true;
-                    }
-                    else
-                    {
-                        _zAnimController.Attack = false;
-                    }
-            }
 
-            transform.LookAt(_currentPath.corners[1]);
+        StopCoroutine(_chasePlayerIE);
+        _chasePlayerIE = null;
 
-            yield return new WaitForSeconds(refreshTime);
-        }
+        _goTowardsTargetPositionIE = StartCoroutine(GoTowardsTargetPosition()); // go towards last seen player position
+        yield return _goTowardsTargetPositionIE;
+
+        _chasingPlayer = false;
+
+        _zAnimController.Agro = false;
+
+        _lostTrackOfPlayerIE = null;
+    }
+
+
+    #region methods
+    private void ResetTarget()
+    {
+        _currentTargetPosition = Vector3.zero;
+        _currentTargetPriority = TargetPriorityLevel.none;
     }
 
     #region PlayerViewMethods
 
-    void GetPlayersInsideFOV(List<GameObject> players) 
+    void GetPlayersInsideFOV(List<GameObject> players)
     {
         players.Clear();
 
-        Collider[] colliders = Physics.OverlapSphere(transform.position, FovDistance);
-        if(colliders.Length != 0) 
+        Collider[] colliders = Physics.OverlapSphere(transform.position - transform.forward * FovOffset, FovRange);
+        if (colliders.Length != 0)
         {
-            foreach (Collider target in colliders) 
+            foreach (Collider target in colliders)
             {
-                if (target.CompareTag("Player")) 
+                if (target.CompareTag("Player"))
                 {
                     Vector3 targetDirection = (target.transform.position - transform.position).normalized;
-                    bool insideRange = Vector3.Angle(transform.forward, targetDirection) < FovRange / 2 ;
-                    if (insideRange) 
+                    bool insideRange = Vector3.Angle(transform.forward, targetDirection) < FovViewAngle / 2;
+                    if (insideRange)
                     {
                         float targetDistance = Vector3.Distance(transform.position, target.transform.position);
                         bool nothingBetween = !Physics.Raycast(transform.position, targetDirection, targetDistance, _obstructViewLayers);
-                        if (nothingBetween) 
+                        if (nothingBetween)
                         {
                             players.Add(target.gameObject);
                         }
@@ -234,13 +272,13 @@ public class ZombieController : MonoBehaviour
         }
     }
 
-    Vector3 ClosestPlayerPosition(List<GameObject> players) 
+    Vector3 ClosestPlayerPosition(List<GameObject> players)
     {
         Vector3 _closestPlayerPosition = players[0].transform.position;
 
-        for (int i = 1; i < players.Count-1; i++)
+        for (int i = 1; i < players.Count - 1; i++)
         {
-            if (Vector3.Distance(transform.position, players[i].transform.position) < Vector3.Distance(transform.position, _closestPlayerPosition)) 
+            if (Vector3.Distance(transform.position, players[i].transform.position) < Vector3.Distance(transform.position, _closestPlayerPosition))
             {
                 _closestPlayerPosition = players[i].transform.position;
             }
@@ -272,21 +310,26 @@ public class ZombieController : MonoBehaviour
             return (Vector3.Distance(transform.position, targetPosition) < Vector3.Distance(transform.position, _currentTargetPosition));
     }
 
-    private bool ValidatePriority(TargetPriorityLevel priorityLevel) {
+    private bool ValidatePriority(TargetPriorityLevel priorityLevel)
+    {
         return priorityLevel < _currentTargetPriority;
     }
 
     #endregion
 
+    #endregion
+
+
     #region Gizmos 
     private void OnDrawGizmos()
     {
-        Vector3 viewAngle01 = DirectionFromAngle(transform.eulerAngles.y, -FovRange / 2);
-        Vector3 viewAngle02 = DirectionFromAngle(transform.eulerAngles.y, FovRange / 2);
+        Vector3 viewAngle01 = DirectionFromAngle(transform.eulerAngles.y, -FovViewAngle / 2);
+        Vector3 viewAngle02 = DirectionFromAngle(transform.eulerAngles.y, FovViewAngle / 2);
 
         Gizmos.color = Color.black;
-        Gizmos.DrawLine(transform.position, transform.position + viewAngle01 * FovDistance);
-        Gizmos.DrawLine(transform.position, transform.position + viewAngle02 * FovDistance);
+        Vector3 originPos = transform.position - transform.forward * FovOffset;
+        Gizmos.DrawLine(originPos, originPos + viewAngle01 * FovRange);
+        Gizmos.DrawLine(originPos, originPos + viewAngle02 * FovRange);
     }
 
     private Vector3 DirectionFromAngle(float eulerY, float angleInDegrees)
@@ -297,5 +340,5 @@ public class ZombieController : MonoBehaviour
     }
     #endregion
 
-    
+
 }
