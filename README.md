@@ -10,7 +10,7 @@ Done(but needs refactoring)
 - can go up stairs
 
 - keep looking for the player after stop seen him.
-- try serch for the player X Times
+- try search for the player X Times
 
 To Do:
 -  turn smoothly when changing direction
