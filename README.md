@@ -10,7 +10,14 @@ Done(but needs refactoring)
 - can go up stairs
 
 To Do:
-- keep looking for the player after stop seen him
+- keep looking for the player after stop seen him.
+- try serch for the player X Times
+- {
+-   Choose if keep going left/rihgt/forward.(discard if it is not possible to go that way).
+-   continue in that direction x number of meters or until colliding with some obstacle.
+- }
+- After this return to idle state
+
 
 Notes:
 - The navmesh areas are used to avoid jumping or crawling if it's unnecessary
