@@ -17,7 +17,7 @@ public class ZombieControllerExp : MonoBehaviour
     [SerializeField]    [Range(0.5f, 2)] private float fovOffset = 0.5f;
     [SerializeField]    [Min(1)] private float detectPlayersAroundR = 1f;
     [Header("Navigation")]
-    [SerializeField]    [Range(0.1f, 2)] private float angulasSpeed = 1f;
+    [SerializeField]    [Range(0.1f, 2)] private float angularAmount = 1f;
     [SerializeField]    [Range(1, 10)] private float stopDistance = 1f;
     [SerializeField]    private LayerMask obstructViewLayers;
     [Header("On Lose Sight On Player")]
@@ -241,7 +241,7 @@ public class ZombieControllerExp : MonoBehaviour
                 targetDirection = _currentPath.corners[1] - transform.position;
                 if (transform.forward != targetDirection)
                 {
-                    newDirection = Vector3.RotateTowards(transform.forward, targetDirection, angulasSpeed, 0.0f);
+                    newDirection = Vector3.RotateTowards(transform.forward, targetDirection, angularAmount, 0.0f);
                     transform.rotation = Quaternion.LookRotation(newDirection);
                 }
                 #endregion
@@ -281,7 +281,7 @@ public class ZombieControllerExp : MonoBehaviour
                 targetDirection = _currentPath.corners[1] - transform.position;
                 if (transform.forward != targetDirection) 
                 {
-                    newDirection = Vector3.RotateTowards(transform.forward, targetDirection, angulasSpeed, 0.0f);
+                    newDirection = Vector3.RotateTowards(transform.forward, targetDirection, angularAmount, 0.0f);
                     transform.rotation = Quaternion.LookRotation(newDirection);
                 }
                 #endregion
