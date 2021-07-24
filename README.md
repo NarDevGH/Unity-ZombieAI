@@ -2,7 +2,7 @@
 Done(but needs refactoring)
 - Go towards ramdom sound.
 - Go Toward the highest priority sound.
-- Chases the player when he sees him.
+- Chases the player when sees him.
 - Chase/attack the closest player.
 - cant see player through walls or obstacles that are in the obstacle layer.
 
