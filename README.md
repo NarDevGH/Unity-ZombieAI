@@ -22,3 +22,4 @@ Notes:
 - The navmesh areas are used to avoid jumping or crawling if it's unnecessary
 - the whole body of the zombie turns towards the corners of the path. Since its pivot is on the soles of its feet, it allows it to move without problems. but if its 
   somewhere else, the zombie would behave strangely.
+ -The rotation is given by the path update time and the angularAmount
