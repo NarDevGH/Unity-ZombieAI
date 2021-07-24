@@ -12,8 +12,10 @@ Done(but needs refactoring)
 - keep looking for the player after stop seen him.
 - try search for the player X Times
 
-To Do:
 -  turn smoothly when changing direction
+
+To Do:
+
 
 
 Notes:
