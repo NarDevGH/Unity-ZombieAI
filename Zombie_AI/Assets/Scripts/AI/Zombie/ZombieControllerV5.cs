@@ -8,7 +8,7 @@ using System;
 
 // zombie turn smoothly when changing direction
 
-public class ZombieControllerExp : MonoBehaviour
+public class ZombieControllerV5 : MonoBehaviour
 {
     #region variables
     [Header("Player Detection")]
