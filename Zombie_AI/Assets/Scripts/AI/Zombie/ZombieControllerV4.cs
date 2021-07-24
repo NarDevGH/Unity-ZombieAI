@@ -7,7 +7,7 @@ using AI.Zombie.Helper;
 
 // zombie Keeps seraching for player after losing sight on him
 
-public class ZombieControllerExp : MonoBehaviour
+public class ZombieControllerV4 : MonoBehaviour
 {
     #region variables
     [Header("Player Detection")]
