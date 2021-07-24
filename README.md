@@ -17,6 +17,8 @@ Done(but needs refactoring)
 To Do:
 
 - When attacking, rotate the torso (between certain limit) to where the player is in case he is in a high places or on the ground.
+- Sounds
+- damage player
 
 Notes:
 - The navmesh areas are used to avoid jumping or crawling if it's unnecessary
